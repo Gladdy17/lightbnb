@@ -85,7 +85,31 @@ const addUser = function (user) {
  * @return {Promise<[{}]>} A promise to the reservations.
  */
 const getAllReservations = function (guest_id, limit = 10) {
-  return getAllProperties(null, 2);
+  const queryString = `
+    SELECT 
+      reservations.id AS reservation_id,
+      reservations.start_date,
+      reservations.end_date,
+      properties.id AS property_id,
+      properties.name AS property_name,
+      properties.address AS property_address,
+      properties.price_per_night,
+      users.id AS guest_id,
+      users.first_name AS guest_first_name,
+      users.last_name AS guest_last_name
+    FROM reservations
+    JOIN properties ON reservations.property_id = properties.id
+    JOIN users ON reservations.guest_id = users.id
+    WHERE reservations.guest_id = $1
+    LIMIT $2;
+  `;
+  
+  return db.query(queryString, [guest_id, limit])
+    .then(res => res.rows)
+    .catch(err => {
+      console.error('Error fetching reservations:', err);
+      throw err;
+    });
 };
 
 /// Properties
