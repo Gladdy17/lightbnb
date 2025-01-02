@@ -4,9 +4,9 @@ const { Pool } = require ('pg');
 const pool = new Pool({
   host: 'localhost',        // The host where your database is running
   port: 5432,               // The port PostgreSQL is listening on
-  user: 'your_username',    // The database username
-  password: 'your_password',// The password for the username
-  database: 'your_database',// Your PostgreSQL connection details here
+  user: 'postgres',    // The database username
+  password: '12345',// The password for the username
+  database: 'lightbnb',// Your PostgreSQL connection details here
 });
 
 /// Users
@@ -104,7 +104,7 @@ const getAllReservations = function (guest_id, limit = 10) {
     LIMIT $2;
   `;
   
-  return db.query(queryString, [guest_id, limit])
+  return pool.query(queryString, [guest_id, limit])
     .then(res => res.rows)
     .catch(err => {
       console.error('Error fetching reservations:', err);
@@ -189,11 +189,64 @@ const getAllProperties = function (options, limit = 10) {
  * @param {{}} property An object containing all of the property details.
  * @return {Promise<{}>} A promise to the property.
  */
+// const addProperty = function (property) {
+//   const propertyId = Object.keys(properties).length + 1;
+//   property.id = propertyId;
+//   properties[propertyId] = property;
+//   return Promise.resolve(property);
+// };
+
+
 const addProperty = function (property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  const {
+    owner_id,
+    title,
+    description,
+    thumbnail_photo_url,
+    cover_photo_url,
+    cost_per_night,
+    street,
+    city,
+    province,
+    post_code,
+    country,
+    parking_spaces,
+    number_of_bathrooms,
+    number_of_bedrooms
+  } = property;
+
+  // SQL query to insert a new property into the properties table
+  return pool
+    .query(
+      `INSERT INTO properties (owner_id, title, description, thumbnail_photo_url, cover_photo_url, cost_per_night, 
+      street, city, province, post_code, country, parking_spaces, number_of_bathrooms, number_of_bedrooms) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+      RETURNING *`,
+      [
+        owner_id,
+        title,
+        description,
+        thumbnail_photo_url,
+        cover_photo_url,
+        cost_per_night,
+        street,
+        city,
+        province,
+        post_code,
+        country,
+        parking_spaces,
+        number_of_bathrooms,
+        number_of_bedrooms
+      ]
+    )
+    .then(result => {
+      // Return the saved property (including the generated id)
+      return result.rows[0];
+    })
+    .catch(err => {
+      console.error('Error adding property:', err);
+      throw err;
+    });
 };
 
 module.exports = {
